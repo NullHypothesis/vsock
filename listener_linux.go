@@ -52,11 +52,11 @@ func (l *listener) Accept() (net.Conn, error) {
 const name = "vsock"
 
 // listen is the entry point for Listen on Linux.
-func listen(cid, port uint32, _ *Config) (*Listener, error) {
+func listen(typ int, cid, port uint32, _ *Config) (*Listener, error) {
 	// TODO(mdlayher): Config default nil check and initialize. Pass options to
 	// socket.Config where necessary.
 
-	c, err := socket.Socket(unix.AF_VSOCK, unix.SOCK_STREAM, 0, name, nil)
+	c, err := socket.Socket(unix.AF_VSOCK, typ, 0, name, nil)
 	if err != nil {
 		return nil, err
 	}

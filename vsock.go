@@ -9,6 +9,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"golang.org/x/sys/unix"
 )
 
 const (
@@ -84,13 +86,32 @@ func Listen(port uint32, cfg *Config) (*Listener, error) {
 	return ListenContextID(cid, port, cfg)
 }
 
+func ListenUDP(port uint32, cfg *Config) (*Listener, error) {
+	cid, err := ContextID()
+	if err != nil {
+		// No addresses available.
+		return nil, opError(opListen, err, nil, nil)
+	}
+
+	l, err := listen(unix.SOCK_DGRAM, cid, port, cfg)
+	if err != nil {
+		// No remote address available.
+		return nil, opError(opListen, err, &Addr{
+			ContextID: cid,
+			Port:      port,
+		}, nil)
+	}
+
+	return l, nil
+}
+
 // ListenContextID is the same as Listen, but also accepts an explicit context
 // ID parameter. This function is intended for advanced use cases and most
 // callers should use Listen instead.
 //
 // See the documentation of Listen for more details.
 func ListenContextID(contextID, port uint32, cfg *Config) (*Listener, error) {
-	l, err := listen(contextID, port, cfg)
+	l, err := listen(unix.SOCK_STREAM, contextID, port, cfg)
 	if err != nil {
 		// No remote address available.
 		return nil, opError(opListen, err, &Addr{
@@ -176,7 +197,20 @@ func (l *Listener) opError(op string, err error) error {
 // When the connection is no longer needed, Close must be called to free
 // resources.
 func Dial(contextID, port uint32, cfg *Config) (*Conn, error) {
-	c, err := dial(contextID, port, cfg)
+	c, err := dial(unix.SOCK_STREAM, contextID, port, cfg)
+	if err != nil {
+		// No local address, but we have a remote address we can return.
+		return nil, opError(opDial, err, nil, &Addr{
+			ContextID: contextID,
+			Port:      port,
+		})
+	}
+
+	return c, nil
+}
+
+func DialUDP(contextID, port uint32, cfg *Config) (*Conn, error) {
+	c, err := dial(unix.SOCK_DGRAM, contextID, port, cfg)
 	if err != nil {
 		// No local address, but we have a remote address we can return.
 		return nil, opError(opDial, err, nil, &Addr{

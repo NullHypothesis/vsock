@@ -13,12 +13,12 @@ func TestUnimplemented(t *testing.T) {
 			want, got)
 	}
 
-	if _, got := listen(0, 0, nil); want != got {
+	if _, got := listen(0, 0, 0, nil); want != got {
 		t.Fatalf("unexpected error from listen:\n- want: %v\n-  got: %v",
 			want, got)
 	}
 
-	if _, got := dial(0, 0, nil); want != got {
+	if _, got := dial(0, 0, 0, nil); want != got {
 		t.Fatalf("unexpected error from dial:\n- want: %v\n-  got: %v",
 			want, got)
 	}
